@@ -1,0 +1,37 @@
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><span>AM</span><div>Attendance<br><small>Management</small></div></div>
+    <nav>
+      <button [class.active]="activePage === 'dashboard'" (click)="selectPage('dashboard')">⌂ <span>Dashboard</span></button>
+      <button [class.active]="activePage === 'employees'" (click)="selectPage('employees')">♙ <span>Employees</span></button>
+      <button [class.active]="activePage === 'attendance'" (click)="selectPage('attendance')">◷ <span>Attendance</span></button>
+      <button [class.active]="activePage === 'users'" (click)="selectPage('users')">♧ <span>Users</span></button>
+      <button [class.active]="activePage === 'roles'" (click)="selectPage('roles')">⚙ <span>Roles</span></button>
+    </nav>
+    <p class="sidebar-note">Firebase login will be added here later.</p>
+  </aside>
+
+  <main>
+    <header><div><p class="eyebrow">ADMIN PORTAL</p><h1>{{ activePage | titlecase }}</h1></div><div class="avatar">A</div></header>
+    <div *ngIf="message" class="alert success">{{ message }} <button (click)="message = ''">×</button></div>
+    <div *ngIf="error" class="alert error">{{ error }} <button (click)="error = ''">×</button></div>
+
+    <section *ngIf="activePage === 'dashboard'" class="dashboard">
+      <div class="welcome"><div><p class="eyebrow">OVERVIEW</p><h2>Welcome back, Aditi</h2><p>Manage your team, user accounts, and daily attendance from one place.</p><button class="primary" (click)="selectPage('employees')">Manage employees</button></div><div class="calendar-art">✓</div></div>
+      <div class="stat-grid"><article><span>Active employees</span><strong>{{ employees.length }}</strong><small>Registered in the system</small></article><article><span>Today's attendance</span><strong>—</strong><small>Attendance module coming next</small></article><article><span>User accounts</span><strong>—</strong><small>User module coming next</small></article></div>
+      <section class="card"><h3>Getting started</h3><ol><li>Create roles such as <b>ADMIN</b> and <b>EMPLOYEE</b>.</li><li>Add employees and create their user accounts.</li><li>Start marking daily attendance.</li></ol></section>
+    </section>
+
+    <section *ngIf="activePage === 'employees'" class="employees-page">
+      <div class="toolbar"><div><h2>Employees</h2><p>Manage employee details and employment information.</p></div><button class="primary" (click)="openCreateEmployee()">+ Add employee</button></div>
+      <div class="card"><input class="search" #searchBox (input)="searchEmployees(searchBox.value)" placeholder="Search by name, email, department, or designation" />
+        <div *ngIf="isLoading" class="empty">Loading employees…</div>
+        <div *ngIf="!isLoading && !filteredEmployees.length" class="empty">No employees found. Add your first employee.</div>
+        <div class="table-wrap" *ngIf="!isLoading && filteredEmployees.length"><table><thead><tr><th>Employee</th><th>Department</th><th>Designation</th><th>Joining date</th><th></th></tr></thead><tbody><tr *ngFor="let employee of filteredEmployees"><td><b>{{ employee.firstName }} {{ employee.lastName }}</b><small>{{ employee.email }} · {{ employee.phoneNumber }}</small></td><td>{{ employee.department }}</td><td>{{ employee.designation }}</td><td>{{ employee.dateOfJoining }}</td><td class="actions"><button (click)="openEditEmployee(employee)">Edit</button><button class="danger" (click)="deactivateEmployee(employee)">Deactivate</button></td></tr></tbody></table></div>
+      </div>
+      <div class="modal-backdrop" *ngIf="showEmployeeForm"><form class="modal" [formGroup]="employeeForm" (ngSubmit)="saveEmployee()"><div class="modal-header"><div><h2>{{ editingEmployee ? 'Edit employee' : 'Add employee' }}</h2><p>All fields are required.</p></div><button type="button" class="icon-button" (click)="closeEmployeeForm()">×</button></div><div class="form-grid"><label>First name<input formControlName="firstName" /></label><label>Last name<input formControlName="lastName" /></label><label>Email<input type="email" formControlName="email" /></label><label>Phone number<input formControlName="phoneNumber" /></label><label>Department<input formControlName="department" /></label><label>Designation<input formControlName="designation" /></label><label>Joining date<input type="date" formControlName="dateOfJoining" /></label></div><p class="form-error" *ngIf="employeeForm.invalid && employeeForm.touched">Please complete every field with a valid email address.</p><div class="modal-actions"><button type="button" class="secondary" (click)="closeEmployeeForm()">Cancel</button><button class="primary" [disabled]="isSaving">{{ isSaving ? 'Saving…' : 'Save employee' }}</button></div></form></div>
+    </section>
+
+    <section *ngIf="activePage === 'attendance' || activePage === 'users' || activePage === 'roles'" class="empty-state"><h2>{{ activePage | titlecase }} module</h2><p>This is the next module we will connect to your existing backend API.</p></section>
+  </main>
+</div>
