@@ -19,7 +19,6 @@ public class AttendanceRequest {
     @NotNull(message = "Attendance date is required")
     private LocalDate attendanceDate;
 
-    @NotNull(message = "Check-in time is required")
     private LocalTime checkInTime;
 
     private LocalTime checkOutTime;

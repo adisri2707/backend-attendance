@@ -3,12 +3,16 @@ package com.aditi.attendance.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
-@Table(name = "attendance")
+@Table(
+        name = "attendance",
+        indexes = {
+                @Index(name = "idx_attendance_employee_date", columnList = "employee_id, attendance_date")
+        }
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,7 +26,7 @@ public class Attendance {
     @Column(name = "attendance_date", nullable = false)
     private LocalDate attendanceDate;
 
-    @Column(name = "check_in_time", nullable = false)
+    @Column(name = "check_in_time")
     private LocalTime checkInTime;
 
     @Column(name = "check_out_time")

@@ -8,6 +8,8 @@ import com.aditi.attendance.employee.repository.EmployeeRepository;
 import com.aditi.attendance.role.exception.RoleNotFoundException;
 import com.aditi.attendance.role.repository.RoleRepository;
 import com.aditi.attendance.common.util.EmployeeCodeGenerator;
+import com.aditi.attendance.user.dto.AccountLookupResponse;
+import com.aditi.attendance.user.dto.AuthStatusResponse;
 import com.aditi.attendance.user.dto.LoginRequest;
 import java.time.LocalDate;
 import com.aditi.attendance.user.dto.SetupPasswordRequest;
@@ -15,6 +17,7 @@ import com.aditi.attendance.user.dto.SignupRequest;
 import com.aditi.attendance.user.dto.UserRequest;
 import com.aditi.attendance.user.dto.UserResponse;
 import com.aditi.attendance.user.exception.InvalidCredentialsException;
+import com.aditi.attendance.user.exception.UnauthorizedEmailException;
 import com.aditi.attendance.user.exception.UserAlreadyRegisteredException;
 import com.aditi.attendance.user.exception.UserNotFoundException;
 import com.aditi.attendance.user.exception.UserNotYetSetupException;
@@ -122,9 +125,10 @@ public class UserService {
     public UserResponse login(LoginRequest request) {
 
         User user = userRepository.findByUsername(request.getUsername())
+                .or(() -> userRepository.findByEmployeeEmail(request.getUsername()))
                 .orElseThrow(() ->
-                        new InvalidCredentialsException(
-                                "Invalid username or password."
+                        new UnauthorizedEmailException(
+                                "Unauthorized email."
                         ));
 
         if (!user.getActive()) {
@@ -151,8 +155,35 @@ public class UserService {
         return UserMapper.toResponse(user);
     }
 
+    public AuthStatusResponse getAuthStatus() {
+        return AuthStatusResponse.builder()
+                .signupAllowed(userRepository.count() == 0)
+                .build();
+    }
+
+    public AccountLookupResponse lookupAccount(String email) {
+        return userRepository.findByUsername(email)
+                .or(() -> userRepository.findByEmployeeEmail(email))
+                .map(user -> AccountLookupResponse.builder()
+                        .found(true)
+                        .needsPasswordSetup(user.getPassword() == null || user.getPassword().isBlank())
+                        .email(email)
+                        .build())
+                .orElseGet(() -> AccountLookupResponse.builder()
+                        .found(false)
+                        .needsPasswordSetup(false)
+                        .email(email)
+                        .build());
+    }
+
     @Transactional
     public UserResponse signupAdmin(SignupRequest request) {
+
+        if (userRepository.count() > 0) {
+            throw new UserAlreadyRegisteredException(
+                    "Admin already exists. Please login with your email and password."
+            );
+        }
 
         if (userRepository.findByUsername(request.getEmail()).isPresent()) {
             throw new UserAlreadyRegisteredException(

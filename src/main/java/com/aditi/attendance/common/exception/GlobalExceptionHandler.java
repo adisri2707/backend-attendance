@@ -2,12 +2,14 @@ package com.aditi.attendance.common.exception;
 
 import com.aditi.attendance.attendance.exception.AttendanceAlreadyMarkedException;
 import com.aditi.attendance.attendance.exception.AttendanceNotFoundException;
+import com.aditi.attendance.attendance.exception.InvalidAttendanceActionException;
 import com.aditi.attendance.common.response.ErrorResponse;
 import com.aditi.attendance.employee.exception.DuplicateEmployeeException;
 import com.aditi.attendance.employee.exception.EmployeeNotFoundException;
 import com.aditi.attendance.role.exception.DuplicateRoleException;
 import com.aditi.attendance.role.exception.RoleNotFoundException;
 import com.aditi.attendance.user.exception.InvalidCredentialsException;
+import com.aditi.attendance.user.exception.UnauthorizedEmailException;
 import com.aditi.attendance.user.exception.UserAlreadyRegisteredException;
 import com.aditi.attendance.user.exception.UserNotFoundException;
 import com.aditi.attendance.user.exception.UserNotYetSetupException;
@@ -26,6 +28,18 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(UnauthorizedActionException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorizedAction(
+            UnauthorizedActionException ex,
+            HttpServletRequest request) {
+
+        return buildErrorResponse(
+                HttpStatus.FORBIDDEN,
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+    }
 
     @ExceptionHandler(EmployeeNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleEmployeeNotFound(
@@ -51,6 +65,38 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler({
+            InvalidAttendanceActionException.class,
+            AttendanceAlreadyMarkedException.class
+    })
+    public ResponseEntity<ErrorResponse> handleInvalidAttendanceAction(
+            RuntimeException ex,
+            HttpServletRequest request) {
+
+        return buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+    }
+
+    @ExceptionHandler({
+            DuplicateEmployeeException.class,
+            DuplicateRoleException.class,
+            UserAlreadyRegisteredException.class,
+            UsernameAlreadyExistsException.class
+    })
+    public ResponseEntity<ErrorResponse> handleConflict(
+            RuntimeException ex,
+            HttpServletRequest request) {
+
+        return buildErrorResponse(
+                HttpStatus.CONFLICT,
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+    }
+
     @ExceptionHandler(RoleNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleRoleNotFound(
             RoleNotFoundException ex,
@@ -70,6 +116,18 @@ public class GlobalExceptionHandler {
 
         return buildErrorResponse(
                 HttpStatus.NOT_FOUND,
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+    }
+
+    @ExceptionHandler(UnauthorizedEmailException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorizedEmail(
+            UnauthorizedEmailException ex,
+            HttpServletRequest request) {
+
+        return buildErrorResponse(
+                HttpStatus.UNAUTHORIZED,
                 ex.getMessage(),
                 request.getRequestURI()
         );

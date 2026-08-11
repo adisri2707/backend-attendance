@@ -1,5 +1,7 @@
 package com.aditi.attendance.user.controller;
 
+import com.aditi.attendance.user.dto.AccountLookupResponse;
+import com.aditi.attendance.user.dto.AuthStatusResponse;
 import com.aditi.attendance.user.dto.LoginRequest;
 import com.aditi.attendance.user.dto.SetupPasswordRequest;
 import com.aditi.attendance.user.dto.SignupRequest;
@@ -54,6 +56,18 @@ public class UserController {
     public List<UserResponse> searchUser(@RequestParam String keyword) {
 
         return userService.searchUser(keyword);
+    }
+
+    @GetMapping("/auth/status")
+    public AuthStatusResponse getAuthStatus() {
+
+        return userService.getAuthStatus();
+    }
+
+    @GetMapping("/auth/lookup")
+    public AccountLookupResponse lookupAccount(@RequestParam String email) {
+
+        return userService.lookupAccount(email);
     }
 
     @PostMapping("/signup")

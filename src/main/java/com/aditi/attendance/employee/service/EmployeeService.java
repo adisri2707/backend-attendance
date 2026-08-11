@@ -1,5 +1,8 @@
 package com.aditi.attendance.employee.service;
 
+import com.aditi.attendance.common.exception.UnauthorizedActionException;
+import com.aditi.attendance.common.util.Constants;
+import com.aditi.attendance.common.util.EmployeeCodeGenerator;
 import com.aditi.attendance.employee.dto.EmployeeRequest;
 import com.aditi.attendance.employee.dto.EmployeeResponse;
 import com.aditi.attendance.employee.exception.DuplicateEmployeeException;
@@ -7,16 +10,17 @@ import com.aditi.attendance.employee.exception.EmployeeNotFoundException;
 import com.aditi.attendance.employee.mapper.EmployeeMapper;
 import com.aditi.attendance.employee.repository.EmployeeCriteriaRepository;
 import com.aditi.attendance.employee.repository.EmployeeRepository;
-import com.aditi.attendance.common.util.EmployeeCodeGenerator;
 import com.aditi.attendance.entity.Employee;
 import com.aditi.attendance.entity.Role;
 import com.aditi.attendance.entity.User;
 import com.aditi.attendance.role.repository.RoleRepository;
+import com.aditi.attendance.user.exception.UserNotFoundException;
 import com.aditi.attendance.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,7 +34,9 @@ public class EmployeeService {
     private final UserRepository userRepository;
 
     @Transactional
-    public EmployeeResponse createEmployee(EmployeeRequest request) {
+    public EmployeeResponse createEmployee(EmployeeRequest request, String actorEmail) {
+
+        requireAdmin(actorEmail);
 
         validateDuplicateEmail(request.getEmail());
         validateDuplicatePhone(request.getPhoneNumber());
@@ -69,6 +75,19 @@ public class EmployeeService {
             .collect(Collectors.toList());
     }
 
+    /** Active teammates list for employee "My Team" view. */
+    public List<EmployeeResponse> getTeamMembers() {
+
+        return employeeRepository.findByDeletedFalse()
+                .stream()
+                .filter(e -> Boolean.TRUE.equals(e.getActive()))
+                .sorted(Comparator.comparing(
+                        (Employee e) -> (e.getFirstName() + " " + e.getLastName()).toLowerCase()
+                ))
+                .map(EmployeeMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
     public EmployeeResponse getEmployeeById(Long id) {
 
         Employee employee = findEmployeeById(id);
@@ -77,7 +96,9 @@ public class EmployeeService {
     }
 
     @Transactional
-    public EmployeeResponse updateEmployee(Long id, EmployeeRequest request) {
+    public EmployeeResponse updateEmployee(Long id, EmployeeRequest request, String actorEmail) {
+
+        requireAdmin(actorEmail);
 
         Employee employee = findEmployeeById(id);
 
@@ -105,11 +126,12 @@ public class EmployeeService {
     }
 
     @Transactional
-    public void deleteEmployee(Long id) {
+    public void deleteEmployee(Long id, String actorEmail) {
+
+        requireAdmin(actorEmail);
 
         Employee employee = findEmployeeById(id);
 
-        // soft-delete: mark deleted and inactive
         employee.setDeleted(true);
         employee.setActive(false);
 
@@ -122,6 +144,25 @@ public class EmployeeService {
                 .stream()
                 .map(EmployeeMapper::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    private void requireAdmin(String actorEmail) {
+        if (actorEmail == null || actorEmail.isBlank()) {
+            throw new UnauthorizedActionException("Admin email is required to manage employees.");
+        }
+
+        User user = userRepository.findByUsername(actorEmail.trim())
+                .or(() -> userRepository.findByEmployeeEmail(actorEmail.trim()))
+                .orElseThrow(() -> new UserNotFoundException(
+                        "User not found for email: " + actorEmail
+                ));
+
+        if (user.getRole() == null
+                || !Constants.ROLE_ADMIN.equalsIgnoreCase(user.getRole().getRoleName())) {
+            throw new UnauthorizedActionException(
+                    "Only admin can add, edit, or delete employees."
+            );
+        }
     }
 
     private Employee findEmployeeById(Long id) {

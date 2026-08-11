@@ -21,17 +21,25 @@ public class EmployeeController {
 
     @PostMapping
     public ResponseEntity<EmployeeResponse> createEmployee(
+            @RequestParam String actorEmail,
             @Valid @RequestBody EmployeeRequest request) {
 
-        EmployeeResponse response = employeeService.createEmployee(request);
+        EmployeeResponse response = employeeService.createEmployee(request, actorEmail);
 
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @GetMapping
-    public ResponseEntity<List<EmployeeResponse>> getAllEmployees() { // TODO : use pageable response with searching and sorting
+    public ResponseEntity<List<EmployeeResponse>> getAllEmployees() {
 
         return ResponseEntity.ok(employeeService.getAllEmployees());
+    }
+
+    /** Active employees for the employee "My Team" view. */
+    @GetMapping("/team")
+    public ResponseEntity<List<EmployeeResponse>> getTeamMembers() {
+
+        return ResponseEntity.ok(employeeService.getTeamMembers());
     }
 
     @GetMapping("/{id}")
@@ -44,17 +52,20 @@ public class EmployeeController {
     @PutMapping("/{id}")
     public ResponseEntity<EmployeeResponse> updateEmployee(
             @PathVariable Long id,
+            @RequestParam String actorEmail,
             @Valid @RequestBody EmployeeRequest request) {
 
         return ResponseEntity.ok(
-                employeeService.updateEmployee(id, request)
+                employeeService.updateEmployee(id, request, actorEmail)
         );
     }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteEmployee(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            @RequestParam String actorEmail) {
 
-        employeeService.deleteEmployee(id);
+        employeeService.deleteEmployee(id, actorEmail);
 
         return ResponseEntity.ok("Employee deleted successfully.");
     }
